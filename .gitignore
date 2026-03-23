@@ -1,0 +1,37 @@
+# Dependencies
+node_modules/
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Build outputs
+frontend/dist/
+*.egg-info/
+
+# Environment
+.env
+backend/.env
+
+# Database (built at runtime)
+backend/data/sap_o2c.db
+backend/data/dataset.zip
+
+# Duplicate dataset at root (already in backend/data/)
+sap-order-to-cash-dataset/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Cursor
+.cursor/
