@@ -1,4 +1,5 @@
-import { X, Expand } from 'lucide-react';
+import { X, Maximize2, Copy, Check } from 'lucide-react';
+import { useState } from 'react';
 import type { GraphNode } from '../types';
 import { getNodeColor } from '../utils/colors';
 
@@ -9,7 +10,7 @@ interface NodeInspectorProps {
 }
 
 function formatValue(value: unknown): string {
-  if (value === null || value === undefined) return '-';
+  if (value === null || value === undefined) return '—';
   if (typeof value === 'boolean') return value ? 'Yes' : 'No';
   if (typeof value === 'number') {
     if (Number.isInteger(value)) return value.toLocaleString();
@@ -25,52 +26,92 @@ function formatKey(key: string): string {
   return key.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase()).trim();
 }
 
+function MetadataCard({ label, value, color }: { label: string; value: string; color: string }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(value);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
+
+  return (
+    <div
+      className="group p-2.5 rounded-lg transition-all duration-200 cursor-pointer relative"
+      style={{
+        background: 'var(--bg-card)',
+        border: '1px solid var(--border-color)',
+      }}
+      onClick={handleCopy}
+      onMouseEnter={e => { e.currentTarget.style.borderColor = color + '30'; }}
+      onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border-color)'; }}
+    >
+      <div className="text-[10px] font-medium uppercase tracking-wider mb-1" style={{ color: 'var(--text-muted)' }}>
+        {label}
+      </div>
+      <div className="text-[13px] font-medium truncate pr-5" title={value} style={{ color: 'var(--text-primary)' }}>
+        {value}
+      </div>
+      <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+        {copied
+          ? <Check className="w-3 h-3 text-emerald-400" />
+          : <Copy className="w-3 h-3" style={{ color: 'var(--text-muted)' }} />
+        }
+      </div>
+    </div>
+  );
+}
+
 export default function NodeInspector({ node, onClose, onExpand }: NodeInspectorProps) {
   const color = getNodeColor(node.type);
 
   return (
-    <div className="absolute bottom-0 left-0 right-0 border-t z-10 transition-all"
-      style={{
-        background: 'var(--bg-panel)',
-        borderColor: 'var(--border-color)',
-        maxHeight: '40vh',
-      }}>
-      <div className="flex items-center justify-between px-4 py-2.5 border-b"
+    <div className="absolute bottom-0 left-0 right-0 z-10 animate-slide-up glass"
+      style={{ maxHeight: '38vh' }}>
+
+      <div className="flex items-center justify-between px-4 py-3 border-b"
         style={{ borderColor: 'var(--border-color)' }}>
-        <div className="flex items-center gap-2">
-          <span className="w-3 h-3 rounded-full" style={{ background: color }} />
-          <span className="font-medium text-sm">{node.label}</span>
-          <span className="text-xs px-2 py-0.5 rounded-full"
-            style={{ background: color + '22', color }}>
+        <div className="flex items-center gap-2.5">
+          <div className="w-3 h-3 rounded-full" style={{
+            background: color,
+            boxShadow: `0 0 8px ${color}50`,
+          }} />
+          <span className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>
+            {node.label}
+          </span>
+          <span className="text-[10px] font-medium px-2 py-0.5 rounded-md"
+            style={{ background: color + '15', color, border: `1px solid ${color}25` }}>
             {node.type}
+          </span>
+          <span className="text-[10px] font-mono px-1.5 py-0.5 rounded"
+            style={{ background: 'var(--bg-card)', color: 'var(--text-muted)' }}>
+            {node.id}
           </span>
         </div>
         <div className="flex items-center gap-1">
           <button onClick={() => onExpand(node.id)}
-            className="p-1.5 rounded-lg transition-colors cursor-pointer hover:bg-white/5"
+            className="p-1.5 rounded-lg transition-all duration-200 cursor-pointer hover:bg-white/5 active:scale-90"
             style={{ color: 'var(--text-secondary)' }}
             title="Expand connections">
-            <Expand className="w-4 h-4" />
+            <Maximize2 className="w-4 h-4" />
           </button>
           <button onClick={onClose}
-            className="p-1.5 rounded-lg transition-colors cursor-pointer hover:bg-white/5"
+            className="p-1.5 rounded-lg transition-all duration-200 cursor-pointer hover:bg-white/5 active:scale-90"
             style={{ color: 'var(--text-secondary)' }}>
             <X className="w-4 h-4" />
           </button>
         </div>
       </div>
 
-      <div className="p-4 overflow-y-auto" style={{ maxHeight: 'calc(40vh - 50px)' }}>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+      <div className="p-4 overflow-y-auto" style={{ maxHeight: 'calc(38vh - 52px)' }}>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
           {Object.entries(node.metadata).map(([key, value]) => (
-            <div key={key} className="p-2 rounded-lg" style={{ background: 'var(--bg-card)' }}>
-              <div className="text-xs mb-0.5" style={{ color: 'var(--text-secondary)' }}>
-                {formatKey(key)}
-              </div>
-              <div className="text-sm font-medium truncate" title={formatValue(value)}>
-                {formatValue(value)}
-              </div>
-            </div>
+            <MetadataCard
+              key={key}
+              label={formatKey(key)}
+              value={formatValue(value)}
+              color={color}
+            />
           ))}
         </div>
       </div>

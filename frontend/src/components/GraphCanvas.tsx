@@ -53,8 +53,8 @@ export default function GraphCanvas({
 
   useEffect(() => {
     if (fgRef.current) {
-      fgRef.current.d3Force('charge')?.strength(-120);
-      fgRef.current.d3Force('link')?.distance(60);
+      fgRef.current.d3Force('charge')?.strength(-150);
+      fgRef.current.d3Force('link')?.distance(70);
     }
   }, [filteredData]);
 
@@ -82,8 +82,8 @@ export default function GraphCanvas({
         onNodeClick(graphNode);
 
         if (fgRef.current) {
-          fgRef.current.centerAt(node.x, node.y, 500);
-          fgRef.current.zoom(2.5, 500);
+          fgRef.current.centerAt(node.x, node.y, 600);
+          fgRef.current.zoom(2.5, 600);
         }
       }, DOUBLE_CLICK_DELAY);
     },
@@ -98,28 +98,71 @@ export default function GraphCanvas({
       const size = getNodeSize(node.type);
 
       if (isHighlighted || isSelected) {
+        const pulseSize = size + 8;
+        const gradient = ctx.createRadialGradient(
+          node.x!, node.y!, size,
+          node.x!, node.y!, pulseSize + 4
+        );
+        gradient.addColorStop(0, baseColor + '40');
+        gradient.addColorStop(1, baseColor + '00');
         ctx.beginPath();
-        ctx.arc(node.x!, node.y!, size + 4, 0, 2 * Math.PI);
-        ctx.fillStyle = baseColor + '33';
+        ctx.arc(node.x!, node.y!, pulseSize + 4, 0, 2 * Math.PI);
+        ctx.fillStyle = gradient;
         ctx.fill();
-        ctx.strokeStyle = baseColor;
+
+        ctx.beginPath();
+        ctx.arc(node.x!, node.y!, size + 3, 0, 2 * Math.PI);
+        ctx.strokeStyle = baseColor + '80';
         ctx.lineWidth = 1.5;
+        ctx.setLineDash([3, 3]);
         ctx.stroke();
+        ctx.setLineDash([]);
       }
+
+      const nodeGradient = ctx.createRadialGradient(
+        node.x! - size * 0.3, node.y! - size * 0.3, 0,
+        node.x!, node.y!, size
+      );
+      nodeGradient.addColorStop(0, baseColor);
+      nodeGradient.addColorStop(1, baseColor + 'aa');
 
       ctx.beginPath();
       ctx.arc(node.x!, node.y!, size, 0, 2 * Math.PI);
-      ctx.fillStyle = isSelected || isHighlighted ? baseColor : baseColor + 'cc';
+      ctx.fillStyle = isSelected || isHighlighted ? baseColor : nodeGradient;
       ctx.fill();
 
-      if (globalScale > 1.5 || isSelected || isHighlighted) {
-        const label = node.label.length > 20 ? node.label.slice(0, 18) + '..' : node.label;
-        const fontSize = Math.max(10 / globalScale, 3);
-        ctx.font = `${fontSize}px Inter, sans-serif`;
+      if (isSelected || isHighlighted) {
+        ctx.shadowColor = baseColor;
+        ctx.shadowBlur = 12;
+        ctx.beginPath();
+        ctx.arc(node.x!, node.y!, size, 0, 2 * Math.PI);
+        ctx.fillStyle = baseColor;
+        ctx.fill();
+        ctx.shadowBlur = 0;
+      }
+
+      if (globalScale > 1.3 || isSelected || isHighlighted) {
+        const label = node.label.length > 22 ? node.label.slice(0, 20) + '..' : node.label;
+        const fontSize = Math.max(11 / globalScale, 3);
+        ctx.font = `500 ${fontSize}px Inter, system-ui, sans-serif`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'top';
-        ctx.fillStyle = isSelected || isHighlighted ? '#fff' : '#bbb';
-        ctx.fillText(label, node.x!, node.y! + size + 3);
+
+        const textWidth = ctx.measureText(label).width;
+        const padding = 3;
+        ctx.fillStyle = 'rgba(5, 5, 15, 0.75)';
+        ctx.beginPath();
+        ctx.roundRect(
+          node.x! - textWidth / 2 - padding,
+          node.y! + size + 2,
+          textWidth + padding * 2,
+          fontSize + padding,
+          3
+        );
+        ctx.fill();
+
+        ctx.fillStyle = isSelected || isHighlighted ? '#fff' : '#ccc';
+        ctx.fillText(label, node.x!, node.y! + size + 3.5);
       }
     },
     [selectedNode, highlightedNodes]
@@ -137,15 +180,30 @@ export default function GraphCanvas({
       ctx.beginPath();
       ctx.moveTo(src.x, src.y);
       ctx.lineTo(tgt.x, tgt.y);
-      ctx.strokeStyle = isHighlighted ? '#6366f1' : '#1e1e4a';
-      ctx.lineWidth = isHighlighted ? 1.5 : 0.5;
+
+      if (isHighlighted) {
+        ctx.strokeStyle = 'rgba(129, 140, 248, 0.5)';
+        ctx.lineWidth = 2;
+        ctx.shadowColor = '#6366f1';
+        ctx.shadowBlur = 6;
+      } else {
+        ctx.strokeStyle = 'rgba(99, 102, 241, 0.08)';
+        ctx.lineWidth = 0.5;
+      }
+
       ctx.stroke();
+      ctx.shadowBlur = 0;
     },
     [highlightedNodes]
   );
 
   return (
-    <div ref={containerRef} className="w-full h-full" style={{ background: 'var(--bg-primary)' }}>
+    <div ref={containerRef} className="w-full h-full relative" style={{ background: 'var(--bg-primary)' }}>
+      <div className="absolute inset-0 pointer-events-none z-[1]"
+        style={{
+          background: 'radial-gradient(ellipse at 30% 40%, rgba(99, 102, 241, 0.04) 0%, transparent 60%), radial-gradient(ellipse at 70% 60%, rgba(139, 92, 246, 0.03) 0%, transparent 50%)',
+        }}
+      />
       <ForceGraph2D
         ref={fgRef}
         graphData={filteredData}
@@ -157,7 +215,7 @@ export default function GraphCanvas({
         enableZoomInteraction={true}
         cooldownTicks={100}
         warmupTicks={50}
-        backgroundColor="#06060e"
+        backgroundColor="rgba(0,0,0,0)"
       />
     </div>
   );
