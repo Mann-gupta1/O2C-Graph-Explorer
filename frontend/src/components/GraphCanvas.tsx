@@ -60,7 +60,10 @@ export default function GraphCanvas({
   }, [filteredData]);
 
   const handleNodeClick = useCallback(
-    (node: ForceGraphNode, event: MouseEvent) => {
+    (node: ForceGraphNode, event: any) => {
+      const clickX = event?.clientX ?? event?.pageX ?? window.innerWidth / 2;
+      const clickY = event?.clientY ?? event?.pageY ?? window.innerHeight / 2;
+
       if (clickTimer.current && lastClickedNode.current === node.id) {
         clearTimeout(clickTimer.current);
         clickTimer.current = null;
@@ -80,7 +83,7 @@ export default function GraphCanvas({
           label: node.label,
           metadata: node.metadata,
         };
-        onNodeClick(graphNode, { x: event.clientX, y: event.clientY });
+        onNodeClick(graphNode, { x: clickX, y: clickY });
 
         if (fgRef.current) {
           fgRef.current.centerAt(node.x, node.y, 600);
