@@ -3,6 +3,7 @@ services:
     name: sap-o2c-graph-explorer
     runtime: docker
     dockerfilePath: ./Dockerfile
+    dockerContext: .
     envVars:
       - key: GROQ_API_KEY
         sync: false
