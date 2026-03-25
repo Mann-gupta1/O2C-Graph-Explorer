@@ -8,7 +8,7 @@ export function useChat(onNodesReferenced?: (nodeIds: string[]) => void) {
       id: 'welcome',
       role: 'assistant',
       content:
-        'Welcome! I can help you explore the SAP Order-to-Cash dataset. Ask me about sales orders, deliveries, billing documents, payments, products, or customers.\n\nTry questions like:\n- "Which products have the most billing documents?"\n- "Show me sales orders that were delivered but not billed"\n- "Trace the flow of billing document 90504248"',
+        'Hi! I can help you analyze the **Order to Cash** process.',
       timestamp: new Date(),
     },
   ]);

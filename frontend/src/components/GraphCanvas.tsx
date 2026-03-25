@@ -1,5 +1,6 @@
 import { useRef, useCallback, useEffect, useMemo } from 'react';
 import ForceGraph2D from 'react-force-graph-2d';
+import { ZoomIn, ZoomOut, Maximize, RotateCcw } from 'lucide-react';
 import type { GraphData, GraphNode } from '../types';
 import { getNodeColor, getNodeSize } from '../utils/colors';
 
@@ -8,7 +9,7 @@ interface GraphCanvasProps {
   selectedNode: GraphNode | null;
   highlightedNodes: Set<string>;
   activeFilters: Set<string>;
-  onNodeClick: (node: GraphNode) => void;
+  onNodeClick: (node: GraphNode, position: { x: number; y: number }) => void;
   onNodeDoubleClick: (nodeId: string) => void;
 }
 
@@ -53,13 +54,13 @@ export default function GraphCanvas({
 
   useEffect(() => {
     if (fgRef.current) {
-      fgRef.current.d3Force('charge')?.strength(-150);
-      fgRef.current.d3Force('link')?.distance(70);
+      fgRef.current.d3Force('charge')?.strength(-140);
+      fgRef.current.d3Force('link')?.distance(65);
     }
   }, [filteredData]);
 
   const handleNodeClick = useCallback(
-    (node: ForceGraphNode) => {
+    (node: ForceGraphNode, event: MouseEvent) => {
       if (clickTimer.current && lastClickedNode.current === node.id) {
         clearTimeout(clickTimer.current);
         clickTimer.current = null;
@@ -79,7 +80,7 @@ export default function GraphCanvas({
           label: node.label,
           metadata: node.metadata,
         };
-        onNodeClick(graphNode);
+        onNodeClick(graphNode, { x: event.clientX, y: event.clientY });
 
         if (fgRef.current) {
           fgRef.current.centerAt(node.x, node.y, 600);
@@ -98,71 +99,38 @@ export default function GraphCanvas({
       const size = getNodeSize(node.type);
 
       if (isHighlighted || isSelected) {
-        const pulseSize = size + 8;
-        const gradient = ctx.createRadialGradient(
-          node.x!, node.y!, size,
-          node.x!, node.y!, pulseSize + 4
-        );
-        gradient.addColorStop(0, baseColor + '40');
-        gradient.addColorStop(1, baseColor + '00');
         ctx.beginPath();
-        ctx.arc(node.x!, node.y!, pulseSize + 4, 0, 2 * Math.PI);
-        ctx.fillStyle = gradient;
+        ctx.arc(node.x!, node.y!, size + 6, 0, 2 * Math.PI);
+        ctx.fillStyle = baseColor + '18';
         ctx.fill();
-
         ctx.beginPath();
         ctx.arc(node.x!, node.y!, size + 3, 0, 2 * Math.PI);
-        ctx.strokeStyle = baseColor + '80';
-        ctx.lineWidth = 1.5;
-        ctx.setLineDash([3, 3]);
+        ctx.strokeStyle = baseColor + '50';
+        ctx.lineWidth = 1;
         ctx.stroke();
-        ctx.setLineDash([]);
       }
-
-      const nodeGradient = ctx.createRadialGradient(
-        node.x! - size * 0.3, node.y! - size * 0.3, 0,
-        node.x!, node.y!, size
-      );
-      nodeGradient.addColorStop(0, baseColor);
-      nodeGradient.addColorStop(1, baseColor + 'aa');
 
       ctx.beginPath();
       ctx.arc(node.x!, node.y!, size, 0, 2 * Math.PI);
-      ctx.fillStyle = isSelected || isHighlighted ? baseColor : nodeGradient;
+      ctx.fillStyle = baseColor;
       ctx.fill();
 
-      if (isSelected || isHighlighted) {
-        ctx.shadowColor = baseColor;
-        ctx.shadowBlur = 12;
+      if (isSelected) {
         ctx.beginPath();
-        ctx.arc(node.x!, node.y!, size, 0, 2 * Math.PI);
-        ctx.fillStyle = baseColor;
-        ctx.fill();
-        ctx.shadowBlur = 0;
+        ctx.arc(node.x!, node.y!, size + 1.5, 0, 2 * Math.PI);
+        ctx.strokeStyle = '#111827';
+        ctx.lineWidth = 2;
+        ctx.stroke();
       }
 
-      if (globalScale > 1.3 || isSelected || isHighlighted) {
-        const label = node.label.length > 22 ? node.label.slice(0, 20) + '..' : node.label;
-        const fontSize = Math.max(11 / globalScale, 3);
+      if (globalScale > 1.8 || isSelected || isHighlighted) {
+        const label = node.label.length > 18 ? node.label.slice(0, 16) + '..' : node.label;
+        const fontSize = Math.max(10 / globalScale, 3);
         ctx.font = `500 ${fontSize}px Inter, system-ui, sans-serif`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'top';
-
-        const textWidth = ctx.measureText(label).width;
-        const padding = 3;
-        ctx.fillStyle = 'rgba(5, 5, 15, 0.75)';
-        ctx.beginPath();
-        ctx.roundRect(
-          node.x! - textWidth / 2 - padding,
-          node.y! + size + 2,
-          textWidth + padding * 2,
-          fontSize + padding,
-          3
-        );
-        ctx.fill();
-
-        ctx.fillStyle = isSelected || isHighlighted ? '#fff' : '#ccc';
-        ctx.fillText(label, node.x!, node.y! + size + 3.5);
+        ctx.fillStyle = '#374151';
+        ctx.fillText(label, node.x!, node.y! + size + 3);
       }
     },
     [selectedNode, highlightedNodes]
@@ -180,28 +148,26 @@ export default function GraphCanvas({
       ctx.beginPath();
       ctx.moveTo(src.x, src.y);
       ctx.lineTo(tgt.x, tgt.y);
-
-      if (isHighlighted) {
-        ctx.strokeStyle = 'rgba(129, 140, 248, 0.5)';
-        ctx.lineWidth = 2;
-        ctx.shadowColor = '#6366f1';
-        ctx.shadowBlur = 6;
-      } else {
-        ctx.strokeStyle = 'rgba(99, 102, 241, 0.08)';
-        ctx.lineWidth = 0.5;
-      }
-
+      ctx.strokeStyle = isHighlighted ? '#6366f1' : 'rgba(147, 197, 253, 0.35)';
+      ctx.lineWidth = isHighlighted ? 2 : 0.8;
       ctx.stroke();
-      ctx.shadowBlur = 0;
     },
     [highlightedNodes]
   );
 
+  const handleZoomIn = () => fgRef.current?.zoom(fgRef.current.zoom() * 1.4, 300);
+  const handleZoomOut = () => fgRef.current?.zoom(fgRef.current.zoom() / 1.4, 300);
+  const handleFit = () => fgRef.current?.zoomToFit(400, 40);
+  const handleReset = () => {
+    fgRef.current?.centerAt(0, 0, 400);
+    fgRef.current?.zoom(1, 400);
+  };
+
   return (
-    <div ref={containerRef} className="w-full h-full relative" style={{ background: 'var(--bg-primary)' }}>
+    <div ref={containerRef} className="w-full h-full relative" style={{ background: '#fafbfd' }}>
       <div className="absolute inset-0 pointer-events-none z-[1]"
         style={{
-          background: 'radial-gradient(ellipse at 30% 40%, rgba(99, 102, 241, 0.04) 0%, transparent 60%), radial-gradient(ellipse at 70% 60%, rgba(139, 92, 246, 0.03) 0%, transparent 50%)',
+          background: 'radial-gradient(ellipse at 60% 40%, rgba(147, 197, 253, 0.08) 0%, transparent 60%)',
         }}
       />
       <ForceGraph2D
@@ -217,6 +183,40 @@ export default function GraphCanvas({
         warmupTicks={50}
         backgroundColor="rgba(0,0,0,0)"
       />
+
+      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-1 px-2 py-1.5 rounded-xl border z-10"
+        style={{
+          background: 'var(--bg-primary)',
+          borderColor: 'var(--border-color)',
+          boxShadow: 'var(--shadow-md)',
+        }}>
+        <button onClick={handleZoomOut}
+          className="p-1.5 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors"
+          style={{ color: 'var(--text-secondary)' }}>
+          <ZoomOut className="w-4 h-4" />
+        </button>
+        <div className="w-px h-4" style={{ background: 'var(--border-color)' }} />
+        <span className="px-2 text-[11px] font-medium min-w-[40px] text-center" style={{ color: 'var(--text-secondary)' }}>
+          100%
+        </span>
+        <div className="w-px h-4" style={{ background: 'var(--border-color)' }} />
+        <button onClick={handleZoomIn}
+          className="p-1.5 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors"
+          style={{ color: 'var(--text-secondary)' }}>
+          <ZoomIn className="w-4 h-4" />
+        </button>
+        <div className="w-px h-4" style={{ background: 'var(--border-color)' }} />
+        <button onClick={handleFit}
+          className="p-1.5 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors"
+          style={{ color: 'var(--text-secondary)' }}>
+          <Maximize className="w-4 h-4" />
+        </button>
+        <button onClick={handleReset}
+          className="p-1.5 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors"
+          style={{ color: 'var(--text-secondary)' }}>
+          <RotateCcw className="w-4 h-4" />
+        </button>
+      </div>
     </div>
   );
 }

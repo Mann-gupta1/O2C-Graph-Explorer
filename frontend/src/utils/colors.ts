@@ -1,16 +1,16 @@
 import type { EntityType } from '../types';
 
 export const ENTITY_COLORS: Record<EntityType, string> = {
-  Customer: '#818cf8',
-  SalesOrder: '#60a5fa',
+  Customer: '#6366f1',
+  SalesOrder: '#3b82f6',
   SalesOrderItem: '#93c5fd',
-  Delivery: '#34d399',
-  BillingDocument: '#fbbf24',
-  JournalEntry: '#c084fc',
-  Payment: '#f472b6',
-  Product: '#fb923c',
-  Plant: '#2dd4bf',
-  Unknown: '#6b7280',
+  Delivery: '#10b981',
+  BillingDocument: '#f59e0b',
+  JournalEntry: '#8b5cf6',
+  Payment: '#ec4899',
+  Product: '#ef4444',
+  Plant: '#14b8a6',
+  Unknown: '#9ca3af',
 };
 
 export const ENTITY_LABELS: Record<EntityType, string> = {
@@ -18,8 +18,8 @@ export const ENTITY_LABELS: Record<EntityType, string> = {
   SalesOrder: 'Sales Orders',
   SalesOrderItem: 'Order Items',
   Delivery: 'Deliveries',
-  BillingDocument: 'Billing Docs',
-  JournalEntry: 'Journal Entries',
+  BillingDocument: 'Billing',
+  JournalEntry: 'Journals',
   Payment: 'Payments',
   Product: 'Products',
   Plant: 'Plants',
@@ -32,14 +32,14 @@ export function getNodeColor(type: string): string {
 
 export function getNodeSize(type: string): number {
   const sizes: Record<string, number> = {
-    Customer: 11,
-    SalesOrder: 8,
-    Delivery: 8,
-    BillingDocument: 8,
-    JournalEntry: 7,
-    Payment: 7,
-    Product: 6,
-    Plant: 6,
+    Customer: 8,
+    SalesOrder: 6,
+    Delivery: 6,
+    BillingDocument: 6,
+    JournalEntry: 5,
+    Payment: 5,
+    Product: 4,
+    Plant: 4,
   };
-  return sizes[type] || 5;
+  return sizes[type] || 4;
 }

@@ -1,4 +1,4 @@
-import { RotateCcw, Hexagon, Network } from 'lucide-react';
+import { RotateCcw, GitBranch, Eye, EyeOff } from 'lucide-react';
 import { ENTITY_COLORS, ENTITY_LABELS } from '../utils/colors';
 import type { EntityType } from '../types';
 
@@ -8,6 +8,8 @@ interface TopBarProps {
   onReset: () => void;
   nodeCount?: number;
   edgeCount?: number;
+  showGranular: boolean;
+  onToggleGranular: () => void;
 }
 
 const FILTER_TYPES: EntityType[] = [
@@ -15,30 +17,46 @@ const FILTER_TYPES: EntityType[] = [
   'JournalEntry', 'Payment', 'Product', 'Plant',
 ];
 
-export default function TopBar({ activeFilters, onToggleFilter, onReset, nodeCount, edgeCount }: TopBarProps) {
+export default function TopBar({ activeFilters, onToggleFilter, onReset, showGranular, onToggleGranular }: TopBarProps) {
   return (
-    <header className="glass flex items-center justify-between px-5 py-2.5 z-20 relative">
-      <div className="flex items-center gap-3.5">
-        <div className="relative w-9 h-9 flex items-center justify-center rounded-xl"
-          style={{ background: 'var(--gradient-1)' }}>
-          <Hexagon className="w-5 h-5 text-white" strokeWidth={2.5} />
-        </div>
-        <div>
-          <h1 className="text-[15px] font-semibold tracking-tight" style={{ color: 'var(--text-primary)' }}>
-            O2C Graph Explorer
-          </h1>
-          {(nodeCount !== undefined || edgeCount !== undefined) && (
-            <div className="flex items-center gap-2 mt-0.5">
-              <span className="text-[10px] flex items-center gap-1" style={{ color: 'var(--text-muted)' }}>
-                <Network className="w-3 h-3" />
-                {nodeCount} nodes &middot; {edgeCount} edges
-              </span>
-            </div>
-          )}
-        </div>
+    <header className="flex items-center justify-between px-5 py-2.5 border-b"
+      style={{ background: 'var(--bg-primary)', borderColor: 'var(--border-color)' }}>
+
+      <div className="flex items-center gap-2">
+        <GitBranch className="w-4 h-4" style={{ color: 'var(--text-muted)' }} />
+        <span className="text-sm" style={{ color: 'var(--text-muted)' }}>Mapping /</span>
+        <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Order to Cash</span>
       </div>
 
-      <div className="flex items-center gap-1.5 flex-wrap">
+      <div className="flex items-center gap-1.5">
+        <button
+          onClick={onReset}
+          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border transition-all duration-150 cursor-pointer hover:shadow-sm active:scale-[0.97]"
+          style={{
+            background: 'var(--bg-primary)',
+            borderColor: 'var(--border-color)',
+            color: 'var(--text-secondary)',
+          }}
+        >
+          <RotateCcw className="w-3 h-3" />
+          Minimize
+        </button>
+
+        <button
+          onClick={onToggleGranular}
+          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition-all duration-150 cursor-pointer active:scale-[0.97]"
+          style={{
+            background: showGranular ? 'var(--accent)' : 'var(--accent-bg)',
+            color: showGranular ? '#fff' : 'var(--accent)',
+            border: showGranular ? '1px solid var(--accent)' : '1px solid transparent',
+          }}
+        >
+          {showGranular ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+          {showGranular ? 'Hide' : 'Show'} Granular Overlay
+        </button>
+
+        <div className="w-px h-5 mx-1" style={{ background: 'var(--border-color)' }} />
+
         {FILTER_TYPES.map(type => {
           const isActive = activeFilters.has(type);
           const color = ENTITY_COLORS[type];
@@ -46,35 +64,18 @@ export default function TopBar({ activeFilters, onToggleFilter, onReset, nodeCou
             <button
               key={type}
               onClick={() => onToggleFilter(type)}
-              className="group px-2.5 py-1.5 text-[11px] font-medium rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-1.5"
+              className="px-2 py-1 text-[10px] font-medium rounded-md transition-all duration-150 cursor-pointer flex items-center gap-1 active:scale-[0.97]"
               style={{
-                background: isActive ? color + '18' : 'transparent',
-                border: `1px solid ${isActive ? color + '40' : 'transparent'}`,
-                color: isActive ? color : 'var(--text-secondary)',
-                boxShadow: isActive ? `0 0 12px ${color}15` : 'none',
+                background: isActive ? color + '15' : 'transparent',
+                color: isActive ? color : 'var(--text-muted)',
+                border: `1px solid ${isActive ? color + '30' : 'transparent'}`,
               }}
             >
-              <span className="w-2 h-2 rounded-full transition-transform duration-200"
-                style={{
-                  background: color,
-                  boxShadow: isActive ? `0 0 6px ${color}60` : 'none',
-                  transform: isActive ? 'scale(1.2)' : 'scale(1)',
-                }} />
+              <span className="w-1.5 h-1.5 rounded-full" style={{ background: color }} />
               {ENTITY_LABELS[type]}
             </button>
           );
         })}
-
-        <div className="w-px h-5 mx-1" style={{ background: 'var(--border-color)' }} />
-
-        <button
-          onClick={onReset}
-          className="p-1.5 rounded-lg transition-all duration-200 cursor-pointer hover:bg-white/5 active:scale-95"
-          style={{ color: 'var(--text-secondary)' }}
-          title="Reset graph"
-        >
-          <RotateCcw className="w-4 h-4" />
-        </button>
       </div>
     </header>
   );
