@@ -12,6 +12,9 @@ frontend/dist/
 # Environment
 .env
 backend/.env
+frontend/.env
+backend/.env.example
+frontend/.env.example
 
 # Database (built at runtime)
 backend/data/sap_o2c.db
@@ -35,3 +38,5 @@ Thumbs.db
 
 # Cursor
 .cursor/
+AI_CODING_SESSION_LOG.md
+DEPLOYMENT.md

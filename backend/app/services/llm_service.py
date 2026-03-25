@@ -1,22 +1,57 @@
 import json
 import re
-import google.generativeai as genai
-from app.config import GEMINI_API_KEY, GEMINI_MODEL
+import time
+from app.config import (
+    GEMINI_API_KEY, GEMINI_MODEL,
+    GROQ_API_KEY, GROQ_MODEL,
+    LLM_PROVIDER,
+)
 from app.db.database import get_schema_ddl, get_table_sample, execute_query
 from app.services.guardrails import is_off_topic, has_domain_relevance, validate_sql, get_rejection_message
 from app.models.schemas import ChatResponse
 
-_model = None
 _schema_context = None
 
 
-def _get_model():
-    global _model
-    if _model is None:
-        genai.configure(api_key=GEMINI_API_KEY)
-        _model = genai.GenerativeModel(GEMINI_MODEL)
-    return _model
+# --------------- LLM abstraction ---------------
 
+def _call_llm(prompt: str) -> str:
+    if LLM_PROVIDER == "groq":
+        return _call_groq(prompt)
+    return _call_gemini(prompt)
+
+
+def _call_groq(prompt: str) -> str:
+    from groq import Groq
+    client = Groq(api_key=GROQ_API_KEY)
+    response = client.chat.completions.create(
+        model=GROQ_MODEL,
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0.1,
+        max_tokens=4096,
+    )
+    return response.choices[0].message.content
+
+
+def _call_gemini(prompt: str) -> str:
+    import google.generativeai as genai
+    genai.configure(api_key=GEMINI_API_KEY)
+    model = genai.GenerativeModel(GEMINI_MODEL)
+
+    for attempt in range(3):
+        try:
+            response = model.generate_content(prompt)
+            return response.text
+        except Exception as e:
+            if "429" in str(e) and attempt < 2:
+                time.sleep(2 ** attempt)
+                continue
+            raise
+
+    raise Exception("Gemini API rate limit. Please try again shortly.")
+
+
+# --------------- Schema context ---------------
 
 def _get_schema_context() -> str:
     global _schema_context
@@ -100,7 +135,6 @@ If the question is not related to the dataset, respond with:
 
 
 def _extract_json(text: str) -> dict:
-    """Extract JSON from LLM response, handling markdown code blocks."""
     text = text.strip()
     json_match = re.search(r'```(?:json)?\s*\n?(.*?)\n?```', text, re.DOTALL)
     if json_match:
@@ -118,7 +152,6 @@ def process_query(query: str) -> ChatResponse:
     if is_off_topic(query):
         return ChatResponse(answer=get_rejection_message(), is_rejected=True)
 
-    model = _get_model()
     schema_context = _get_schema_context()
 
     sql_prompt = f"""{SYSTEM_PROMPT}
@@ -128,8 +161,8 @@ def process_query(query: str) -> ChatResponse:
 User question: {query}"""
 
     try:
-        response = model.generate_content(sql_prompt)
-        result = _extract_json(response.text)
+        response_text = _call_llm(sql_prompt)
+        result = _extract_json(response_text)
     except Exception as e:
         if not has_domain_relevance(query):
             return ChatResponse(answer=get_rejection_message(), is_rejected=True)
@@ -174,8 +207,7 @@ Format important data in a readable way. If there are many results, summarize th
 Do NOT include the SQL query in your answer. Do NOT mention technical details about the database."""
 
     try:
-        answer_response = model.generate_content(answer_prompt)
-        answer = answer_response.text
+        answer = _call_llm(answer_prompt)
     except Exception:
         if query_results:
             answer = f"Query returned {len(query_results)} results. Here are the first few:\n\n"
@@ -188,7 +220,6 @@ Do NOT include the SQL query in your answer. Do NOT mention technical details ab
 
 
 def _extract_node_refs(results: list[dict]) -> list[str]:
-    """Extract graph node IDs from query results."""
     refs = []
     key_mapping = {
         "salesOrder": "SO",
@@ -202,7 +233,6 @@ def _extract_node_refs(results: list[dict]) -> list[str]:
         "material": "PRD",
         "plant": "PLT",
     }
-
     for row in results[:50]:
         for key, prefix in key_mapping.items():
             if key in row and row[key]:

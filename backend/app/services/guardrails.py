@@ -12,14 +12,19 @@ ALLOWED_TABLES = {
 }
 
 OFF_TOPIC_PATTERNS = [
-    r"(?i)(write|compose|create)\s+(a\s+)?(poem|story|essay|song|joke|letter)",
-    r"(?i)(what\s+is|explain|tell\s+me\s+about)\s+(the\s+)?(meaning\s+of\s+life|universe|weather|politics|news)",
-    r"(?i)(translate|convert)\s+.+\s+(to|into)\s+(french|spanish|german|hindi|chinese)",
-    r"(?i)who\s+(is|was|are)\s+(the\s+)?(president|prime\s+minister|ceo|founder)",
-    r"(?i)(recipe|cook|bake|ingredient)",
-    r"(?i)(play|game|movie|music|sport)",
-    r"(?i)(how\s+to\s+)(hack|break|bypass|crack)",
-    r"(?i)(ignore|forget|override)\s+(previous|all|your)\s+(instructions|rules|prompt)",
+    r"(?i)(write|compose|create|generate|make)\s+(\w+\s+)?(a\s+)?(poem|story|essay|song|joke|letter|haiku|limerick)",
+    r"(?i)(what\s+is|explain|tell\s+me\s+about|describe)\s+(the\s+)?(meaning\s+of\s+life|universe|weather|politics|news|history|geography)",
+    r"(?i)(translate|convert)\s+.+\s+(to|into)\s+(french|spanish|german|hindi|chinese|japanese|korean)",
+    r"(?i)who\s+(is|was|are)\s+(the\s+)?(president|prime\s+minister|ceo|founder|king|queen)",
+    r"(?i)\b(recipe|cook|bake|ingredient|food|meal)\b",
+    r"(?i)\b(play|movie|music|sport|score|team|league|match|tournament)\b",
+    r"(?i)(how\s+to\s+)(hack|break|bypass|crack|cheat)",
+    r"(?i)(ignore|forget|override|disregard)\s+(previous|all|your|the|my)\s+(instructions|rules|prompt|context|system)",
+    r"(?i)^(hello|hi|hey|greetings|good morning|good evening|what's up|howdy)\s*[!?.]?\s*$",
+    r"(?i)(capital\s+of|population\s+of|flag\s+of|currency\s+of)",
+    r"(?i)(solve|calculate|compute)\s+(this\s+)?(math|equation|integral|derivative)",
+    r"(?i)(code|program|script|function)\s+(in|using|with)\s+(python|java|javascript|c\+\+|rust|go)",
+    r"(?i)(what|who|where|when|why|how).*(elon\s+musk|trump|biden|modi|pope|celebrity)",
 ]
 
 DOMAIN_KEYWORDS = [
@@ -28,6 +33,9 @@ DOMAIN_KEYWORDS = [
     "amount", "quantity", "document", "cancelled", "status", "flow",
     "o2c", "order to cash", "account", "receivable", "net amount",
     "shipping", "goods movement", "schedule", "currency", "company code",
+    "sold", "total", "count", "average", "how many", "which", "list",
+    "highest", "lowest", "most", "top", "trace", "incomplete", "broken",
+    "partner", "business partner", "profit center",
 ]
 
 
@@ -35,6 +43,11 @@ def is_off_topic(query: str) -> bool:
     for pattern in OFF_TOPIC_PATTERNS:
         if re.search(pattern, query):
             return True
+    query_lower = query.lower().strip()
+    if len(query_lower) < 5:
+        return True
+    if not has_domain_relevance(query) and len(query_lower.split()) <= 4:
+        return True
     return False
 
 

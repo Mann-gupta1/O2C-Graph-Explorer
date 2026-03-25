@@ -107,7 +107,7 @@ export default function App() {
             />
           )}
         </div>
-        <div className="w-[380px] flex-shrink-0">
+        <div className="w-[380px] shrink-0">
           <ChatPanel
             messages={messages}
             isLoading={isLoading}
