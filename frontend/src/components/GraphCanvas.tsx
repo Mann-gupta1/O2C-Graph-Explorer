@@ -158,6 +158,17 @@ export default function GraphCanvas({
     [highlightedNodes]
   );
 
+  const nodePointerAreaPaint = useCallback(
+    (node: ForceGraphNode, color: string, ctx: CanvasRenderingContext2D) => {
+      const size = getNodeSize(node.type) + 4;
+      ctx.beginPath();
+      ctx.arc(node.x!, node.y!, size, 0, 2 * Math.PI);
+      ctx.fillStyle = color;
+      ctx.fill();
+    },
+    []
+  );
+
   const handleZoomIn = () => fgRef.current?.zoom(fgRef.current.zoom() * 1.4, 300);
   const handleZoomOut = () => fgRef.current?.zoom(fgRef.current.zoom() / 1.4, 300);
   const handleFit = () => fgRef.current?.zoomToFit(400, 40);
@@ -178,6 +189,7 @@ export default function GraphCanvas({
         graphData={filteredData}
         nodeId="id"
         nodeCanvasObject={nodeCanvasObject}
+        nodePointerAreaPaint={nodePointerAreaPaint}
         linkCanvasObject={linkCanvasObject}
         onNodeClick={handleNodeClick}
         enableNodeDrag={true}
